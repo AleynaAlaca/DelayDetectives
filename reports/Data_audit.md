@@ -3,7 +3,7 @@
 **Status:** ✅ Done · **Date:** 2026-11-27 · **Code:** `src/phase1_data_audit.py`
 
 ## Goal
-Get to know the data and find its problems before any modeling. No data was changed in this phase; everything was measured on `flights.parquet` from Phase 0. The test months (November–December) were **not** looked at.
+Get to know the data and find its problems before any modeling. No data was changed in this phase; everything was measured on `flights.parquet` from Phase 0. The findings decide what Phases 2–4 have to fix, and the seasonal analysis in section 1.7 decides how the data is split in Phase 3.
 
 ---
 
@@ -18,9 +18,9 @@ Get to know the data and find its problems before any modeling. No data was chan
 | **Features** (known before the flight) | 9 | `AIRLINE`, `ORIGIN_AIRPORT`, `DESTINATION_AIRPORT`, `MONTH`, `DAY_OF_WEEK`, `SCHEDULED_DEPARTURE`, `SCHEDULED_ARRIVAL`, `SCHEDULED_TIME`, `DISTANCE` |
 | **Target** | 1 | `ARRIVAL_DELAY` (minutes; negative = early) |
 | **Known only after the flight** (never used as features) | 17 | `DEPARTURE_TIME`, `DEPARTURE_DELAY`, `TAXI_OUT`, `WHEELS_OFF`, `ELAPSED_TIME`, `AIR_TIME`, `WHEELS_ON`, `TAXI_IN`, `ARRIVAL_TIME`, `CANCELLED`, `CANCELLATION_REASON`, `DIVERTED`, `AIR_SYSTEM_DELAY`, `SECURITY_DELAY`, `AIRLINE_DELAY`, `LATE_AIRCRAFT_DELAY`, `WEATHER_DELAY` |
-| **Other** (not used) | 4 | `YEAR` (always 2015), `DAY` (only to build the date), `FLIGHT_NUMBER`, `TAIL_NUMBER` (a website user would not know the aircraft) |
+| **Other** (not used as features) | 4 | `YEAR` (always 2015), `DAY` (only to build the date), `FLIGHT_NUMBER`, `TAIL_NUMBER` (a website user would not know the aircraft) |
 
-9 + 1 + 17 + 4 = 31: every column is accounted for. `CANCELLED` and `DIVERTED` are used only to filter rows, not as features.
+9 + 1 + 17 + 4 = 31: every column is accounted for. `CANCELLED` and `DIVERTED` are used only to filter rows.
 
 ## 1.3 — October airport codes
 Airports are normally written as three-letter IATA codes (`ATL` = Atlanta). In this dataset October uses numeric BTS airport IDs instead (e.g. `14747`).
@@ -32,7 +32,7 @@ Airports are normally written as three-letter IATA codes (`ATL` = Atlanta). In t
 | All October rows | 486,165 → **every** October flight is affected, in both columns |
 | Different numeric codes | **307** |
 
-**Why it matters:** October is half of the validation set. The model is trained on January–August, where airports appear as letter codes. Without a fix, everything learned about `ATL` would be useless for `10397`. **Phase 2 maps the 307 codes to IATA codes.**
+**Why it matters:** everything the model learns about `ATL` in other months would be useless for `10397` in October, and October flights will appear in train, validation and test. **Phase 2 maps the 307 codes to IATA codes.**
 
 ## 1.4 — Cancelled and diverted flights
 | | Flights |
@@ -57,7 +57,7 @@ Cancelled flights never arrived and diverted flights landed elsewhere, so they h
 | **Median** | **−5** |
 | 75% / 95% / 99% | 8 / 66 / 167 |
 | Maximum | 1,971 (≈ 33 hours) |
-| **Mean** | **4.4** |
+| **Mean** | **4.41** |
 | Standard deviation | 39.3 |
 
 | Share of flights | |
@@ -68,43 +68,49 @@ Cancelled flights never arrived and diverted flights landed elsewhere, so they h
 
 - Most flights arrive **early**; airlines build slack into their schedules.
 - The distribution is **right-skewed**: a few very large delays pull the mean about 9 minutes above the median.
-- **For classification (Phase 6):** only ~18% of flights are "delayed". A model that always says "not delayed" would already reach ~82% accuracy, so accuracy alone is misleading; recall, precision, F1 and ROC-AUC are needed.
 
-### Baseline
-The baseline predicts the same number for every flight: the **training median** (January–August).
-
-| Constant prediction (from train) | Validation MAE (Sep–Oct) |
+### One constant for every flight: median or mean?
+| Constant prediction | MAE (all usable flights) |
 |---|---|
-| **Train median = −4.0 min (baseline)** | **15.54 min** |
-| Train mean = +5.88 min | 19.72 min |
+| **Median (−5 min)** | **19.15 min** |
+| Mean (+4.41 min) | 21.26 min |
 
-Train: 3,836,893 flights · Validation: 945,031 flights.
+MAE (mean absolute error) is smallest when the median is predicted. Linear Regression and RandomForest aim for the **mean** by default (they minimise squared error), so they start at a disadvantage when they are judged by MAE. This is why:
+- the **baseline** of this project is "always predict the training median" (computed on the real split in Phase 3), and
+- Phase 5 also trains LightGBM with an **absolute-error** objective, which aims for the median.
 
-- **15.54 minutes is the number every regression model has to beat.**
-- Predicting the mean is 4.2 minutes worse than predicting the median. MAE is smallest at the median, but Linear Regression and RandomForest aim for the mean by default (they minimise squared error). This is why Phase 5 also trains LightGBM with an absolute-error objective.
+### Class balance for classification
+Only **17.9%** of flights are more than 15 minutes late. A classifier that always says "not delayed" would already reach about 82% accuracy, so accuracy alone is misleading. **Phase 6 uses recall, precision, F1 and ROC-AUC as well.**
 
-## 1.7 — Delay by month (months 1–10)
+## 1.7 — Delay by month
 ![Flights more than 15 min late by month](../results/phase1_late_by_month.png)
 
-| Month | Flights | Mean | Median | > 15 min late | Baseline MAE | Split |
-|---|---|---|---|---|---|---|
-| 1 | 457,013 | 5.8 | −4 | 20.2% | 20.1 | train |
-| 2 | 407,663 | 8.3 | −2 | 22.5% | 21.8 | train |
-| 3 | 492,138 | 4.9 | −4 | 18.6% | 19.2 | train |
-| 4 | 479,251 | 3.2 | −5 | 16.4% | 17.8 | train |
-| 5 | 489,641 | 4.5 | −5 | 17.6% | 19.2 | train |
-| 6 | 492,847 | 9.6 | −3 | 22.7% | 22.5 | train |
-| 7 | 514,384 | 6.4 | −4 | 20.2% | 20.2 | train |
-| 8 | 503,956 | 4.6 | −5 | 18.0% | 19.2 | train |
-| 9 | 462,153 | −0.8 | −7 | 12.4% | 15.7 | validation |
-| 10 | 482,878 | −0.8 | −7 | 11.9% | 15.4 | validation |
+| Month | Flights | Mean | Median | > 15 min late |
+|---|---|---|---|---|
+| 1 | 457,013 | 5.8 | −4 | 20.2% |
+| 2 | 407,663 | 8.3 | −2 | 22.5% |
+| 3 | 492,138 | 4.9 | −4 | 18.6% |
+| 4 | 479,251 | 3.2 | −5 | 16.4% |
+| 5 | 489,641 | 4.5 | −5 | 17.6% |
+| 6 | 492,847 | **9.6** | −3 | **22.7%** |
+| 7 | 514,384 | 6.4 | −4 | 20.2% |
+| 8 | 503,956 | 4.6 | −5 | 18.0% |
+| 9 | 462,153 | −0.8 | −7 | 12.4% |
+| 10 | 482,878 | **−0.8** | −7 | **11.9%** |
+| 11 | 462,367 | 1.1 | −6 | 14.6% |
+| 12 | 469,717 | 6.1 | −5 | 19.9% |
 
-- **September and October are the calmest months** (about 12% delayed vs. 16–23% in training months). The hardest months are June (summer storms, peak traffic) and February (winter).
-- Consequences:
-  1. **Validation results will look somewhat optimistic.** The test months (Nov–Dec: holidays, winter) are likely harder, so test MAE is expected to be higher than validation MAE. This would come from the season, not from an error.
-  2. **`MONTH` is a problem as a feature:** training contains only months 1–8, so the model never sees September–December. Phase 5 compares "no month" with a **cyclical month** encoding (sin/cos).
-  3. **For classification:** the delayed share is ~20% in training but ~12% in validation, so a classifier may over-predict delays on validation. Phase 6 takes this into account.
-- Test months were excluded from this table on purpose: looking at the test target now could influence later decisions.
+- **Delays depend strongly on the season.** The share of delayed flights ranges from 11.9% (October) to 22.7% (June).
+- Hardest months: **June** (summer storms, peak traffic), **February** (winter) and **December** (holidays, winter).
+- Calmest period: **September–November**.
+
+### Consequence for the split (decided in Phase 3)
+A **month-based split** (e.g. train Jan–Aug, validation Sep–Oct, test Nov–Dec) would give very different parts:
+- validation would be the calmest period of the year (≈12% delayed vs. 16–23% in training months);
+- test would mix a calm month (November) and a hard month (December);
+- the model would never see September–December in training, so `MONTH` could not be used.
+
+Because the website will be used for flights in any month, the model should learn **all seasons**, and train, validation and test should be **comparable**. Phase 3 therefore splits **by day, stratified by month**: within every month, the days are randomly divided into train (70%), validation (15%) and test (15%), and all flights of a day stay in the same part (flights on the same day share the same weather, so splitting a day would leak information).
 
 ## 1.8 — Other checks
 **Time columns (HHMM format, e.g. 1435 = 14:35):**
@@ -118,7 +124,7 @@ Train: 3,836,893 flights · Validation: 945,031 flights.
 
 HHMM cannot be given to a model as it is: 13:59 → 14:00 is 1 minute, but `1400 − 1359 = 41`. **Phase 4 converts both columns to minutes after midnight** (`2400` → 0).
 
-**Airlines:** 14 airlines in training, 13 in validation. **US Airways (`US`)** appears only in training: it merged with American Airlines in 2015. Its flights add little for predictions after the merger, and the website should not offer it as an option.
+**Airlines:** 13 of the 14 airlines fly in all 12 months. **US Airways (`US`) flies in only 6 months**: it merged with American Airlines in 2015. Its flights stay in the data, but the website should not offer it as an option.
 
 ---
 
@@ -128,11 +134,13 @@ HHMM cannot be given to a model as it is: 13:59 → 14:00 is 1 minute, but `1400
 | Numeric airport codes in October | 486,165 flights, 307 codes | Phase 2 |
 | Cancelled / diverted flights (no target) | 105,071 flights | Phase 3 |
 | Columns known only after the flight | 17 columns | Never loaded as features (Phase 3) |
+| Delays depend strongly on the month | 11.9% – 22.7% delayed | Phase 3: day-based split stratified by month |
 | HHMM time format | 2 columns | Phase 4 |
-| Validation period calmer than training | ~12% vs ~20% delayed | Reported; considered in Phases 5–7 |
-| `MONTH` values in validation/test never seen in training | months 9–12 | Phase 5 experiment (no month vs cyclical month) |
-| Mean ≠ median (right-skewed target) | 4.4 vs −5 min | Phase 5 (absolute-error objective for LightGBM) |
-| Class imbalance for "> 15 min late" | ~18% | Phase 6 (metrics beyond accuracy) |
+| Mean ≠ median (right-skewed target) | 4.41 vs −5 min | Baseline = median; LightGBM with absolute-error objective (Phase 5) |
+| Class imbalance for "> 15 min late" | 17.9% | Phase 6: metrics beyond accuracy |
+| US Airways stops flying mid-year | 6 of 12 months | Website: not offered |
+
+**Note:** this audit looked at the whole year before the data was split. Only aggregate statistics were used, and no decision here depends on individual flights that later end up in the test set.
 
 ## Outputs
 | File | Location |
@@ -141,4 +149,4 @@ HHMM cannot be given to a model as it is: 13:59 → 14:00 is 1 minute, but `1400
 | `results/phase1_late_by_month.png` | GitHub (download from the Kaggle notebook output) |
 
 ## Next phase
-**Phase 2 — October Airport Code Fix:** map the 307 numeric October codes to three-letter IATA codes without losing any row, and check the result.
+**Phase 2 — October Airport Code Fix:** map the 307 numeric October codes to three-letter IATA codes without losing any row.
