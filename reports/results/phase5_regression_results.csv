@@ -1,0 +1,17 @@
+model,month,val_mae,train_seconds,size_mb,beats_baseline
+Baseline (median),-,18.8,0.0,0.0,False
+Linear Regression,no,20.62,36.24,0.01,False
+Linear Regression,cyclical,20.64,43.67,0.01,False
+Ridge Regression,no,20.62,35.19,0.01,False
+Ridge Regression,cyclical,20.64,42.99,0.01,False
+Ridge + median shift,no,18.79,35.21,0.01,True
+LightGBM (l2),no,20.37,11.54,0.45,False
+LightGBM (l2),cyclical,20.32,11.7,0.43,False
+LightGBM (l1),no,18.23,18.84,0.47,True
+LightGBM (l1),cyclical,18.17,19.1,0.46,True
+RandomForest,cyclical,20.34,1504.81,34.54,False
+RandomForest + median shift,cyclical,18.75,1504.8,34.54,True
+"LightGBM (l1) 300 trees, lr 0.1, 31 leaves",cyclical,18.06,47.67,1.31,True
+"LightGBM (l1) 300 trees, lr 0.1, 127 leaves",cyclical,17.98,63.4,4.88,True
+"LightGBM (l1) 600 trees, lr 0.05, 127 leaves",cyclical,17.96,122.26,9.71,True
+"LightGBM (l1) 600 trees, lr 0.05, 255 leaves",cyclical,17.94,137.3,18.45,True
