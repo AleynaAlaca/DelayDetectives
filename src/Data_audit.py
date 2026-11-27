@@ -99,41 +99,29 @@ print("\nEarly (< 0 min)      :", round((y < 0).mean() * 100, 1), "%")
 print("Late more than 15 min:", round((y > 15).mean() * 100, 1), "%")
 print("Late more than 3 hours:", round((y > 180).mean() * 100, 2), "%")
 
-# %% 1.6 — Baseline: always predict the training median (test months are not used)
-train_y = usable[usable["MONTH"] <= 8]["ARRIVAL_DELAY"]
-val_y = usable[usable["MONTH"].isin([9, 10])]["ARRIVAL_DELAY"]
+# %% 1.6 — One constant for every flight: median or mean?
+median = y.median()
+mean = y.mean()
 
-train_median = train_y.median()
-train_mean = train_y.mean()
+print("Median:", median, "| Mean:", round(mean, 2))
+print("MAE if we always predict the median:", round((y - median).abs().mean(), 2))
+print("MAE if we always predict the mean  :", round((y - mean).abs().mean(), 2))
 
-mae_median = (val_y - train_median).abs().mean()
-mae_mean = (val_y - train_mean).abs().mean()
-
-print("Train flights:", len(train_y), "| Validation flights:", len(val_y))
-print("Train median:", train_median, "| Train mean:", round(train_mean, 2))
-print("Validation MAE if we always predict the median:", round(mae_median, 2))
-print("Validation MAE if we always predict the mean  :", round(mae_mean, 2))
-
-# %% 1.7 — Delay by month (months 1-10 only; test months stay unseen)
-seen = usable[usable["MONTH"] <= 10]
-
-monthly = seen.groupby("MONTH")["ARRIVAL_DELAY"].agg(["count", "mean", "median"])
-monthly["late_15_percent"] = seen.groupby("MONTH")["ARRIVAL_DELAY"].apply(lambda s: (s > 15).mean() * 100)
-monthly["baseline_mae"] = seen.groupby("MONTH")["ARRIVAL_DELAY"].apply(lambda s: (s - train_median).abs().mean())
+# %% 1.7 — Delay by month
+monthly = usable.groupby("MONTH")["ARRIVAL_DELAY"].agg(["count", "mean", "median"])
+monthly["late_15_percent"] = usable.groupby("MONTH")["ARRIVAL_DELAY"].apply(lambda s: (s > 15).mean() * 100)
 
 print(monthly.round(1))
 
 # %% 1.7 — Plot: share of flights more than 15 minutes late
 import matplotlib.pyplot as plt
 
-colors = ["tab:blue"] * 8 + ["tab:orange"] * 2
-
 plt.figure(figsize=(8, 4))
-plt.bar(monthly.index, monthly["late_15_percent"], color=colors)
-plt.title("Flights more than 15 min late, by month (blue = train, orange = validation)")
+plt.bar(monthly.index, monthly["late_15_percent"], color="tab:blue")
+plt.title("Flights more than 15 min late, by month")
 plt.xlabel("Month")
 plt.ylabel("% of flights")
-plt.xticks(range(1, 11))
+plt.xticks(range(1, 13))
 plt.tight_layout()
 
 os.makedirs("/kaggle/working/results", exist_ok=True)
@@ -150,15 +138,10 @@ print("Minutes part above 59 (departure):", (dep % 100 > 59).sum())
 print("Minutes part above 59 (arrival)  :", (arr % 100 > 59).sum())
 print("Value 2400 in arrival:", (arr == 2400).sum())
 
-# %% 1.8 — Airlines that disappear during the year
-train_airlines = set(usable[usable["MONTH"] <= 8]["AIRLINE"])
-val_airlines = set(usable[usable["MONTH"].isin([9, 10])]["AIRLINE"])
-
-print("Airlines in train     :", len(train_airlines))
-print("Airlines in validation:", len(val_airlines))
-
-missing = train_airlines - val_airlines
-print("Only in train:", missing)
+# %% 1.8 — In how many months does each airline fly?
+months_per_airline = usable.groupby("AIRLINE")["MONTH"].nunique()
+print("Number of months each airline flies:")
+print(months_per_airline.sort_values())
 
 airlines = pd.read_csv(raw_dir + "/airlines.csv")
-print(airlines[airlines["IATA_CODE"].isin(missing)])
+print(airlines[airlines["IATA_CODE"].isin(months_per_airline[months_per_airline < 12].index)])
