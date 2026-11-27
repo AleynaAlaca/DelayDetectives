@@ -1,0 +1,41 @@
+# DelayDetectives
+
+**SE3513 Introduction to Machine Learning** — Predicting Flight Arrival Delays
+
+Predict how late a US domestic flight will arrive, using only information that is known before the flight.
+Models are compared against a simple median baseline. The final model will be used in a website.
+
+- **Data:** [2015 Flight Delays and Cancellations](https://www.kaggle.com/datasets/usdot/flight-delays) (USDOT, CC0). Not stored in this repo.
+- **Split:** Train Jan–Aug · Validation Sep–Oct · Test Nov–Dec
+- **Tasks:**
+  - Regression: arrival delay in minutes (metric: MAE)
+  - Classification: will the flight be more than 15 minutes late? (metrics: accuracy, precision, recall, F1, ROC-AUC)
+
+## Repository layout
+
+| Folder | Content |
+|---|---|
+| `src/` | Code for each phase, run on Kaggle (`phase0_...py`, `phase1_...py`, ...) |
+| `reports/` | One report per phase |
+| `results/` | Small outputs: tables and plots |
+| `docs/` | Original project plan |
+
+## Progress
+
+| Phase | Content | Status | Report |
+|---|---|---|---|
+| 0 | Environment & setup | ✅ Done | [phase0_report.md](reports/phase0_report.md) |
+| 1 | Data audit | ⏳ | |
+| 2 | October airport code fix | ⏳ | |
+| 3 | Cleaning, filtering, split | ⏳ | |
+| 4 | Preprocessing | ⏳ | |
+| 5 | Regression model comparison (validation only) | ⏳ | |
+| 6 | Classification model comparison (validation only) | ⏳ | |
+| 7 | Final test evaluation | ⏳ | |
+| 8 | Model export for the website | ⏳ | |
+
+## Reproducing
+
+Code runs on Kaggle notebooks with the dataset attached via **Add Input**.
+Each phase uses the output of the previous phase as its input.
+Library versions: [requirements.txt](requirements.txt). Random seed: `42`.
