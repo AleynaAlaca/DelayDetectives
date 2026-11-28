@@ -1,0 +1,4 @@
+version,roc_auc,log_loss,best_f1,threshold,seconds
+A: old features,0.6721,0.4358,0.3651,0.18,47.5
+"B: + route, traffic, holiday",0.6798,0.4355,0.373,0.17,65.7
+C: + route history,0.6797,0.4349,0.3739,0.18,69.4
