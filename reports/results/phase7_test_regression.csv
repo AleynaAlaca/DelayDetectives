@@ -1,0 +1,4 @@
+model,test_mae,improvement_vs_baseline
+Baseline (median),18.757,0.0
+LightGBM l1 - B (final),17.725,1.032
+LightGBM l1 - A (reference),17.79,0.967
