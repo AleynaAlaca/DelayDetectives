@@ -6,10 +6,12 @@ data/
 # Allow small CSVs we produce (result tables, airport mapping)
 !results/*.csv
 !data/interim/airport_id_map.csv
+!model/*.csv
 
-# --- Model files (large) ---
+# --- Model files (only the final models in model/ are kept) ---
 *.joblib
 *.pkl
+!model/*.joblib
 
 # --- Python / Jupyter ---
 __pycache__/
