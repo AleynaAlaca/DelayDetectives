@@ -1,0 +1,4 @@
+risk,flights,really_delayed,median_delay,share_of_flights
+low,501147,0.113,-7.0,0.612
+medium,205809,0.216,-3.0,0.251
+high,112227,0.354,5.0,0.137
