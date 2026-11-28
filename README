@@ -6,7 +6,7 @@ Predict how late a US domestic flight will arrive, using only information that i
 Models are compared against a simple median baseline. The final model will be used in a website.
 
 - **Data:** [2015 Flight Delays and Cancellations](https://www.kaggle.com/datasets/usdot/flight-delays) (USDOT, CC0). Not stored in this repo.
-- **Split:** Train Jan–Aug · Validation Sep–Oct · Test Nov–Dec
+- **Split:** by day, stratified by month — in every month, 70% of the days go to train, 15% to validation, 15% to test (all flights of a day stay together). This replaced a first month-based split (train Jan–Aug, validation Sep–Oct, test Nov–Dec), which gave very different parts; see [Phase 3](reports/phase3_report.md).
 - **Tasks:**
   - Regression: arrival delay in minutes (metric: MAE)
   - Classification: will the flight be more than 15 minutes late? (metrics: accuracy, precision, recall, F1, ROC-AUC)
@@ -18,6 +18,7 @@ Models are compared against a simple median baseline. The final model will be us
 | `src/` | Code for each phase, run on Kaggle (`phase0_...py`, `phase1_...py`, ...) |
 | `reports/` | One report per phase |
 | `results/` | Small outputs: tables and plots |
+| `model/` | Final models and tables for the website (Phase 8); used with `src/predict.py` |
 | `docs/` | Original project plan |
 
 ## Progress
@@ -25,14 +26,16 @@ Models are compared against a simple median baseline. The final model will be us
 | Phase | Content | Status | Report |
 |---|---|---|---|
 | 0 | Environment & setup | ✅ Done | [phase0_report.md](reports/phase0_report.md) |
-| 1 | Data audit | ⏳ | |
-| 2 | October airport code fix | ⏳ | |
-| 3 | Cleaning, filtering, split | ⏳ | |
-| 4 | Preprocessing | ⏳ | |
-| 5 | Regression model comparison (validation only) | ⏳ | |
-| 6 | Classification model comparison (validation only) | ⏳ | |
-| 7 | Final test evaluation | ⏳ | |
-| 8 | Model export for the website | ⏳ | |
+| 1 | Data audit | ✅ Done | [phase1_report.md](reports/phase1_report.md) |
+| 2 | October airport code fix | ✅ Done | [phase2_report.md](reports/phase2_report.md) |
+| 3 | Cleaning, filtering, split | ✅ Done | [phase3_report.md](reports/phase3_report.md) |
+| 4 | Preprocessing | ✅ Done | [phase4_report.md](reports/phase4_report.md) |
+| 5 | Regression model comparison (validation only) | ✅ Done | [phase5_report.md](reports/phase5_report.md) |
+| 6 | Classification model comparison (validation only) | ✅ Done | [phase6_report.md](reports/phase6_report.md) |
+| 6b | Feature engineering (validation only) | ✅ Done | [phase6b_report.md](reports/phase6b_report.md) |
+| 7 | Final test evaluation | ✅ Done | [phase7_report.md](reports/phase7_report.md) |
+| 8 | Model export for the website | ✅ Done | [phase8_report.md](reports/phase8_report.md) |
+| 9 | Presentation charts | ⏳ | |
 
 ## Reproducing
 
